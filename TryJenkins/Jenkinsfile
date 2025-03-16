@@ -54,3 +54,16 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            echo 'Build finished!'
+        }
+        success {
+            echo 'Build completed successfully.'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
