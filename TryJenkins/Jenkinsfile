@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOTNET_VERSION = '7.0'  // שים לב לעדכן את גרסת .NET אם צריך
+        DOTNET_VERSION = '7.0'  // גרסת ה-.NET הרצויה
     }
 
     stages {
@@ -13,46 +13,43 @@ pipeline {
             }
         }
 
-        stage('Install .NET SDK') {
+        stage('Build with Docker') {
             steps {
                 script {
-                    // התקנת .NET SDK כ-root
+                    // הרצת Docker container עם .NET SDK בתור root
                     sh '''
-                        apt-get update
-                        apt-get install -y wget apt-transport-https software-properties-common
-                        wget https://packages.microsoft.com/config/ubuntu/20.04/prod.list
-                        mv prod.list /etc/apt/sources.list.d/microsoft-prod.list
-                        wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -
-                        apt-get update
-                        apt-get install -y dotnet-sdk-${env.DOTNET_VERSION}
+                        docker run --rm -v $PWD:/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 bash -c "
+                        apt-get update && 
+                        apt-get install -y wget apt-transport-https software-properties-common && 
+                        wget https://packages.microsoft.com/config/ubuntu/20.04/prod.list &&
+                        mv prod.list /etc/apt/sources.list.d/microsoft-prod.list &&
+                        wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add - &&
+                        apt-get update && 
+                        apt-get install -y dotnet-sdk-${env.DOTNET_VERSION} && 
+                        dotnet build TryJenkins"
                     '''
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                // בניית הפרויקט עם .NET
-                script {
-                    sh 'dotnet build TryJenkins'
                 }
             }
         }
 
         stage('Test') {
             steps {
-                // הרצת טסטים (אם ישנם)
                 script {
-                    sh 'dotnet test TryJenkins'
+                    // הרצת טסטים (אם קיימים) בתוך Docker
+                    sh '''
+                        docker run --rm -v $PWD:/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 dotnet test TryJenkins
+                    '''
                 }
             }
         }
 
         stage('Publish') {
             steps {
-                // שלב לפרסום תוצאות או לקבצים אחרים אם צריך
                 script {
-                    sh 'dotnet publish TryJenkins -c Release -o ./publish'
+                    // פרסום הפרויקט מתוך Docker
+                    sh '''
+                        docker run --rm -v $PWD:/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 dotnet publish TryJenkins -c Release -o ./publish
+                    '''
                 }
             }
         }
