@@ -2,28 +2,29 @@ pipeline {
     agent any
 
     environment {
-        DOTNET_VERSION = '7.0'
+        DOTNET_VERSION = '7.0'  // שים לב לעדכן את גרסת .NET אם צריך
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // שלב זה מוודא שאנו שולפים את הקוד מתוך Git
-                git 'https://github.com/EliiShh/TryJenkins.git'
+                // שלב זה מבצע checkout של הקוד מ-Git
+                git url: 'https://github.com/EliiShh/TryJenkins.git'
             }
         }
+
         stage('Install .NET SDK') {
             steps {
                 script {
-                    // התקנת ה-.NET SDK עם הרשאות sudo
+                    // התקנת .NET SDK כ-root
                     sh '''
-                        sudo apt-get update
-                        sudo apt-get install -y wget apt-transport-https software-properties-common
-                        sudo wget https://packages.microsoft.com/config/ubuntu/20.04/prod.list
-                        sudo mv prod.list /etc/apt/sources.list.d/microsoft-prod.list
-                        sudo wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
-                        sudo apt-get update
-                        sudo apt-get install -y dotnet-sdk-${env.DOTNET_VERSION}
+                        apt-get update
+                        apt-get install -y wget apt-transport-https software-properties-common
+                        wget https://packages.microsoft.com/config/ubuntu/20.04/prod.list
+                        mv prod.list /etc/apt/sources.list.d/microsoft-prod.list
+                        wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -
+                        apt-get update
+                        apt-get install -y dotnet-sdk-${env.DOTNET_VERSION}
                     '''
                 }
             }
@@ -31,35 +32,38 @@ pipeline {
 
         stage('Build') {
             steps {
-                // שלב זה בונה את הפרויקט
+                // בניית הפרויקט עם .NET
                 script {
-                    sh 'dotnet build TryJenkins/TryJenkins.csproj'
+                    sh 'dotnet build TryJenkins'
                 }
             }
         }
 
         stage('Test') {
             steps {
-                // שלב זה רץ את המבחנים אם ישנם
+                // הרצת טסטים (אם ישנם)
                 script {
-                    sh 'dotnet test TryJenkins/TryJenkins.csproj'
+                    sh 'dotnet test TryJenkins'
                 }
             }
         }
-        
+
         stage('Publish') {
             steps {
-                // שלב זה מפרסם את התוצאה אם יש צורך
+                // שלב לפרסום תוצאות או לקבצים אחרים אם צריך
                 script {
-                    sh 'dotnet publish TryJenkins/TryJenkins.csproj -c Release -o /app/publish'
+                    sh 'dotnet publish TryJenkins -c Release -o ./publish'
                 }
             }
         }
     }
 
     post {
+        always {
+            echo 'Build finished!'
+        }
         success {
-            echo 'Build succeeded!'
+            echo 'Build completed successfully.'
         }
         failure {
             echo 'Build failed!'
