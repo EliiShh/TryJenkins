@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+
+    environment {
+        DOTNET_VERSION = '7.0'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // שלב זה מוודא שאנו שולפים את הקוד מתוך Git
+                git 'https://github.com/EliiShh/TryJenkins.git'
+            }
+        }
+
+        stage('Install .NET SDK') {
+            steps {
+                script {
+                    // התקנת ה-.NET SDK אם הוא לא קיים
+                    sh '''
+                        apt-get update
+                        apt-get install -y wget apt-transport-https software-properties-common
+                        wget https://packages.microsoft.com/config/ubuntu/20.04/prod.list
+                        mv prod.list /etc/apt/sources.list.d/microsoft-prod.list
+                        wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -
+                        apt-get update
+                        apt-get install -y dotnet-sdk-${env.DOTNET_VERSION}
+                    '''
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // שלב זה בונה את הפרויקט
+                script {
+                    sh 'dotnet build TryJenkins/TryJenkins.csproj'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // שלב זה רץ את המבחנים אם ישנם
+                script {
+                    sh 'dotnet test TryJenkins/TryJenkins.csproj'
+                }
+            }
+        }
+        
+        stage('Publish') {
+            steps {
+                // שלב זה מפרסם את התוצאה אם יש צורך
+                script {
+                    sh 'dotnet publish TryJenkins/TryJenkins.csproj -c Release -o /app/publish'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build succeeded!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
