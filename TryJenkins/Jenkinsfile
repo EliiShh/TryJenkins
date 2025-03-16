@@ -29,15 +29,6 @@ pipeline {
                 }
             }
         }
-        
-        stage('Publish') {
-            steps {
-                // שלב זה מפרסם את התוצאה אם יש צורך
-                script {
-                    sh 'dotnet publish TryJenkins/TryJenkins.csproj -c Release -o /app/publish'
-                }
-            }
-        }
     }
 
     post {
