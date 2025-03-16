@@ -18,6 +18,7 @@ pipeline {
                 script {
                     // הרצת Docker container עם .NET SDK בתור root
                     sh '''
+                        # השתמש ב-bash ולא ב-sh
                         docker run --rm -v $(pwd):/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 bash -c "
                         apt-get update && 
                         apt-get install -y wget apt-transport-https software-properties-common && 
@@ -37,7 +38,7 @@ pipeline {
                 script {
                     // הרצת טסטים (אם קיימים) בתוך Docker
                     sh '''
-                        docker run --rm -v $(pwd):/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 dotnet test TryJenkins
+                        docker run --rm -v $(pwd):/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 bash -c "dotnet test TryJenkins"
                     '''
                 }
             }
@@ -48,7 +49,7 @@ pipeline {
                 script {
                     // פרסום הפרויקט מתוך Docker
                     sh '''
-                        docker run --rm -v $(pwd):/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 dotnet publish TryJenkins -c Release -o ./publish
+                        docker run --rm -v $(pwd):/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:7.0 bash -c "dotnet publish TryJenkins -c Release -o ./publish"
                     '''
                 }
             }
