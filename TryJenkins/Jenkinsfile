@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        docker 'docker-agent-alpine  '
+        docker 'alpine'
     }
     
     environment {
